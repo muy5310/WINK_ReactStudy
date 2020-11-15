@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang = "kr">
+<head>
+    <meta charset = "UTF-8">
+    <title>chaesoTime</title>
+    <style>
+        #topbar{
+            position: fixed;
+            top:0px;
+            margin:0px;
+            width: 100%;
+            height:35px;
+            text-align: center;
+            line-height: 35px;
+            background-color: rgb(34, 40, 114);
+            color:white;
+        }
+        .origin_chatbox{
+            margin-top: -20px;
+        }
+        .people{
+            display: inline-block;
+            width: 67px;
+            height: 67px;
+            border-radius: 50px;
+            text-align: center;
+            vertical-align: middle;
+            background-color: rgb(112, 155, 248);
+            line-height: 70px;
+            margin-right: 10px;
+        }
+        .invisible{
+            display: inline-block;
+            width: 70px;
+            margin-right: 10px;
+        }
+        .contentbox{
+            display: inline-block;
+            border-radius: 10px;
+            padding : 10px;
+            background-color:white;
+        }
+        .contentbox:hover {background-color: rgb(255, 189, 177);}
+        .origin_contentbox{
+            display: inline-block;
+            border-radius: 10px;
+            padding : 10px;
+            background-color:white;
+        }
+        .origin_contentbox:hover {background-color: rgb(255, 189, 177);}        
+        .my_chatbox{
+            width: 100%;
+            float: right;
+        }
+        .my_content{
+            margin:3px;
+            float: right;
+            border-radius: 10px;
+            padding : 10px;
+            background-color: rgba(255, 255, 136, 0.938);
+        }
+        .my_content:hover {background-color: rgb(255, 209, 247);}
+        .clear{
+            clear:right;
+        }
+        #timeline{
+            height: 100%;
+            margin-top: 30px;
+            margin-bottom: 100px;
+        }
+        #sendbox{
+            position: fixed;
+            padding: 10px;
+            bottom: 0px;
+            width: 100%;
+            height: 80px;
+        }
+        #send{
+            width: 85%;
+            height: 50px;
+            -webkit-transition: width 1s;
+            transition: width 1s;
+        }
+        #send:focus{
+            -webkit-transition-timing-function: ease-out;
+            transition-timing-function: ease-out;
+            height: 70px;
+        }
+        #postbtn{
+            align-content: center;
+            max-width: 70px;
+            width:10%;
+            height: 60px;
+            border: none;
+        }
+        #postbtn:hover{
+            height: 70px;
+        }
+    </style>
+</head>
+<body style = 'background-color: rgb(173, 218, 255)'>
+    <div id = 'topbar'>
+        윙크 SNS
+    </div>
+    <div id = 'timeline'>
+    </div>
+    <p id = 'under'></p>
+    <p class = 'clear'></p>
+    <div id = 'sendbox'>
+        <textarea name = '' id='send'></textarea>
+        <img id = 'postbtn' onclick='postClick()' src='./image/sendimg.png'></img>
+    </div>
+    <script>
+        let postInput = document.querySelector('textarea');
+        let timeline = document.querySelector('#timeline');
+
+        window.onload = async() => {
+            const postResponse = await fetch('http://ec2-52-78-131-251.ap-northeast-2.compute.amazonaws.com/feed/', {
+                method : 'get',
+            });
+            const posts = await postResponse.json();
+            new_post(posts[0].owner, posts[0].content);
+
+            for (let i = 1 ; i < posts.length; i++){
+                if (posts[i].owner == 'cy') {
+                    my_post(posts[i].content);
+                } else if (posts[i].owner == posts[i-1].owner){
+                    origin_post(posts[i].content);
+                } else {
+                    new_post(posts[i].owner, posts[i].content);
+                }
+            }
+            await document.getElementById('under').scrollIntoView();
+        };
+
+        const postClick = async () => {
+            if(postInput.value == '') {
+                alert('내용을 작성해주세요');
+            } else{ 
+                my_post(postInput.value);
+                const body = await{ name : 'cy' , des : postInput.value};
+                const postNew = await fetch('http://ec2-52-78-131-251.ap-northeast-2.compute.amazonaws.com/feed/', {
+                    method : 'post',
+                    headers:{
+                        'Content-Type' : 'application/json',
+                    },
+                    body : JSON.stringify({
+                        'owner': 'cy',
+                        'content' : postInput.value
+                    }),
+                }).then (res => res.json())
+                .catch(error =>console.error('Error: ', error));
+                postInput.value = '';
+                await document.getElementById('under').scrollIntoView();
+            }
+        }
+        const origin_post = (des) => {
+            let container = document.createElement('div');
+            let owner = document.createElement('p');
+            let content = document.createElement('p');
+            content.appendChild(document.createTextNode(des));
+            owner.setAttribute('class', 'invisible');
+            content.setAttribute('class', 'origin_contentbox');
+            container.setAttribute('class', 'origin_chatbox');
+            container.appendChild(owner);
+            container.appendChild(content);
+            timeline.appendChild(container);
+        };
+        const new_post = (name, des) => { 
+            let container = document.createElement('div');
+            let owner = document.createElement('p');
+            let content = document.createElement('p');
+            owner.appendChild(document.createTextNode(name));
+            content.appendChild(document.createTextNode(des));
+            owner.setAttribute('class', 'people');
+            content.setAttribute('class', 'contentbox')
+            container.setAttribute('class', 'chatbox');
+            container.appendChild(owner);
+            container.appendChild(content);
+            timeline.appendChild(container);
+        };
+        const my_post = (des) => {
+            let my_chatbox = document.createElement('div');
+            let content = document.createElement('p');
+            let clear = document.createElement('p');
+            content.appendChild(document.createTextNode(des));
+            content.setAttribute('class', 'my_content')
+            my_chatbox.setAttribute('class', 'my_chatbox');
+            clear.setAttribute('class', 'clear');
+            my_chatbox.appendChild(content);
+            timeline.appendChild(my_chatbox);
+            timeline.appendChild(clear);
+        }
+    </script>
+</body>
+</html>
